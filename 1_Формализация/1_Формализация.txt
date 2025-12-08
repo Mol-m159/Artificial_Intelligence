@@ -1,0 +1,90 @@
+Формализация высказываний естественного языка в виде Пролог-программы.
+Молчановой Ю. О., 02161-ДМ
+В файле формата docx есть скриншоты выводов программы.
+
+Вариант 2
+Задание:
+Бутси — коричневая кошка. Корни — чёрная кошка. Мактэвити — рыжая кошка. Флэш, Pовеp и Спот — собаки; Pовеp — рыжая, а Спот — белая. Все животные, которыми владеют Том и Кейт, имеют родословные. Том владеет всеми черными и коричневыми животными. Кейт владеет всеми
+собаками небелого цвета, которые не являются собственностью Тома. Алан владеет Мактэвити, если Кейт не владеет Бутси и если Спот не имеет родословной. Флэш — пятнистая собака.
+Запросы:
+• Какие животные не имеют хозяев?
+• Найдите всех собак и укажите их цвет.
+• Укажите всех животных, которыми владеет Том.
+• Перечислите всех собак Кейта.
+
+Код:
+dog("Flash").
+dog("Rover").
+dog("Spot").
+cat("Butsy").
+cat("Korny").
+cat("Maktevity").
+color("Flash","paint").
+color("Korny","black").
+color("Butsy","brown").
+color("Rover","orange").
+color("Maktevity","orange").
+color("Spot","white").
+
+rod(X):- owner(tom,X) ; owner(kate,X).
+owner(tom, X):- color(X,"black") ; color(X,"brown").
+owner(kate, X):- dog(X), not(color(X,"white")), not(owner(tom,X)).
+owner(alan,"Maktevity"):- not(owner(kate,"Butsy")), not(rod("Spot")).
+
+no_owner(X):- (dog(X);cat(X)),not(owner(_,X)).
+all_dogs(X,Y):- dog(X),color(X,Y).
+toms_pets(X):- owner(tom,X).
+all_kates_dogs(X):- dog(X),owner(kate,X).
+
+
+Вариант 6
+Задание:
+Медведь большой. Слон большой. Кот маленький. Медведь коричневый. Кот черный. Слон серый.
+Любой черный или коричневый предмет является темным.
+Запросы:
+• Кто одновременно большой и темный?
+• Есть ли коричневые маленькие слоны?
+• Есть ли большие и темные медведи?
+• Есть ли черный кот?
+Код:
+animal(bear).
+animal(elephant).
+animal(cat).
+size(bear,big).
+size(elephant,big).
+size(cat,small).
+color(bear,brown).
+color(elephant,grey).
+color(cat,black).
+
+dark(X):- color(X,brown);color(X,black).
+
+task1(X):- dark(X),size(X,big).
+task2(_):- color(elephant,brown),size(elephant,small).
+task3(_):- dark(bear),size(bear,big).
+task4(_):- color(cat,black).
+
+Вариант 9
+Задание:
+Опpеделить факты о принадлежности студента определённой студенческой группе. Считается, что два студента знают друг друга, если они учатся в одной группе.
+Запросы:
+• Кого знает определённый студент?
+• Определить состав определённой группы.
+• В каких группах учатся люди с определённым именем?
+• Знает ли один студент другого? 
+Пример данных:
+ 	1 группа: Алекс, Генри.
+	2 группа: Адам, Карл, Алекс.
+	3 группа: Мари.
+Код:
+student("Alex",1).
+student("Henry",1).
+student("Adam",2).
+student("Karl",2).
+student("Mari",3).
+student("Alex",2).
+
+meet(X,Y):- student(X,Z),student(Y,Z), X\=Y.
+know(X,Y):- meet(X,Y).
+sostav(X,Y):- student(X,Y). 
+group(X,Y):- student(X,Y). 
