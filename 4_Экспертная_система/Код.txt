@@ -1,0 +1,182 @@
+main :-
+    write('   ЭКСПЕРТНАЯ СИСТЕМА "РАССТАНОВКА ФЕРЗЕЙ"'), nl,
+    expert_system.
+
+expert_system :-
+    repeat,
+    nl,
+    write('МЕНЮ:'), nl,
+    write('1. Найти одно решение для N ферзей'), nl,
+    write('2. Найти все решения для N ферзей'), nl,
+    write('3. Проверить свое решение'), nl,
+    write('4. Выйти'), nl, nl,
+    
+    write('Выберите действие (1-4): '),
+    read(Choice),
+    nl,
+    
+    (Choice = 1 -> find_one_solution_menu
+    ; Choice = 2 -> find_all_solutions_menu
+    ; Choice = 3 -> check_solution_menu
+    ; Choice = 4 -> !, write('Выход из системы.'), nl
+    ; write('Неверный выбор. Попробуйте снова.'), fail
+    ).
+
+find_one_solution_menu :-
+    get_board_size(N),
+    write('Поиск одного решения для '), write(N), write(' ферзей...'), nl, nl,
+    (find_one_solution(N, Solution) ->
+        write('НАЙДЕНО РЕШЕНИЕ'), nl,
+        write('Размер доски: '), write(N), write('x'), write(N), nl,
+        write('Расстановка: '), write(Solution), nl, nl,
+        display_board(Solution, N),
+        nl, write('Нажмите Enter для продолжения...'),
+        read(_)
+    ;
+        write('Решение не найдено.'), nl
+    ).
+
+find_all_solutions_menu :-
+    get_board_size(N),
+    write('Поиск всех решений для '), write(N), write(' ферзей...'), nl,
+    find_all_solutions(N, Solutions),
+    length(Solutions, Count),
+    write('НАЙДЕНО РЕШЕНИЙ: '), write(Count), nl,
+    
+    (Count > 0 ->
+        write('Показать все решения? (y/n): '),
+        read(Answer),
+        (Answer = y ->
+            display_all_solutions(Solutions, N, 1)
+        ;
+            write('Вывод решений пропущен.'), nl
+        )
+    ;
+        true
+    ),
+    nl, write('Нажмите Enter для продолжения...'),
+    read(_).
+
+check_solution_menu :-
+    get_board_size(N),
+    nl, write('Введите решение в формате:'), nl,
+    write('  [(R1,1),(R2,2),...,(Rn,n)]'), nl,
+    write('где Ri - строка ферзя в столбце i (от 1 до '), write(N), write(')'), nl,
+    write('Пример для 4 ферзей: [(2,1),(4,2),(1,3),(3,4)]'), nl,
+    write('Ваше решение: '),
+    read(Solution),
+    nl,
+    check_user_solution(N, Solution),
+    nl, write('Нажмите Enter для продолжения...'),
+    read(_).
+
+get_board_size(N) :-
+    write('Введите размер доски N (рекомендуется 1-12): '),
+    read(N),
+    integer(N),
+    N > 0,
+    !.
+get_board_size(N) :-
+    write('Неверный размер. Попробуйте снова.'), nl,
+    get_board_size(N).
+
+% Найти одно решение
+find_one_solution(N, Solution) :-
+    find_queens_placement(1, N, [], Solution).
+
+% Найти все решения
+find_all_solutions(N, Solutions) :-
+    findall(Solution, find_one_solution(N, Solution), Solutions).
+
+% Рекурсивное размещение ферзей
+find_queens_placement(Col, N, Board, Solution) :-
+    Col > N,
+    !,
+    reverse(Board, Solution). 
+
+find_queens_placement(Col, N, Board, Solution) :-
+    between(1, N, Row),
+    no_conflicts((Row, Col), Board),
+    NextCol is Col + 1,
+    find_queens_placement(NextCol, N, [(Row, Col)|Board], Solution).
+
+no_conflicts(_, []).
+no_conflicts((Row, Col), [(Row2, Col2)|Rest]) :-
+    Row =\= Row2,                       
+    Col =\= Col2,                      
+    abs(Row - Row2) =\= abs(Col - Col2), 
+    no_conflicts((Row, Col), Rest).
+
+display_board(Solution, N) :-
+    nl, nl,
+    forall(between(1, N, R),
+           (write(R), write(': '),
+            forall(between(1, N, C),
+                   (member((R, C), Solution) -> write('Q ') ; write('_ '))),
+            nl)).
+
+display_all_solutions([], _, _).
+display_all_solutions([Solution|Rest], N, Num) :-
+    nl, write('Решение #'), write(Num), write(':'), nl,
+    write('Расстановка: '), write(Solution), nl,
+    display_board(Solution, N),
+    Num1 is Num + 1,
+    (Rest = [] -> true ; display_all_solutions(Rest, N, Num1)).
+
+check_user_solution(N, Solution) :-
+    write('ПРОВЕРКА РЕШЕНИЯ'), nl,
+    
+    % Проверка 1: Правильное количество ферзей
+    (length(Solution, N) ->
+        write('Правильное количество ферзей: '), write(N), nl
+    ;
+        write('Ошибка: должно быть '), write(N), write(' ферзей'), nl,
+        fail
+    ),
+    check_all_on_board(Solution, N),
+    check_different_rows(Solution),
+    check_different_cols(Solution),
+    check_no_diagonal_attacks(Solution),
+    
+    nl, write('ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ! Решение корректно.'), nl,
+    nl, write('Визуализация решения:'), nl,
+    display_board(Solution, N).
+
+check_all_on_board([], _).
+check_all_on_board([(Row, Col)|Rest], N) :-
+    integer(Row), integer(Col),
+    between(1, N, Row),
+    between(1, N, Col),
+    check_all_on_board(Rest, N).
+
+check_different_rows(Solution) :-
+    findall(Row, member((Row, _), Solution), Rows),
+    sort(Rows, UniqueRows),
+    length(Rows, Len1),
+    length(UniqueRows, Len2),
+    (Len1 =:= Len2 ->
+        write('Все ферзи в разных строках'), nl
+    ;
+        write('Ошибка: несколько ферзей в одной строке'), nl,
+        fail
+    ).
+
+check_different_cols(Solution) :-
+    findall(Col, member((_, Col), Solution), Cols),
+    sort(Cols, UniqueCols),
+    length(Cols, Len1),
+    length(UniqueCols, Len2),
+    (Len1 =:= Len2 ->
+        write('Все ферзи в разных столбцах'), nl
+    ;
+        write('Ошибка: несколько ферзей в одном столбце'), nl,
+        fail
+    ).
+
+check_no_diagonal_attacks([]).
+check_no_diagonal_attacks([(Row, Col)|Rest]) :-
+    \+ (member((Row2, Col2), Rest),
+        abs(Row - Row2) =:= abs(Col - Col2)),
+    check_no_diagonal_attacks(Rest).
+
+% Для запуска введите: main.
